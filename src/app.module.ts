@@ -1,7 +1,7 @@
 import { join } from 'path';
 
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 
@@ -16,21 +16,28 @@ import { MessagesWsModule } from './messages-ws/messages-ws.module';
   imports: [
     ConfigModule.forRoot(),
 
-    TypeOrmModule.forRoot({
-      ssl: process.env.STAGE === 'prod',
-      extra: {
-        ssl: process.env.STAGE === 'prod'
-              ? { rejectUnauthorized: false }
-              : null,
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const stage = (configService.get<string>('STAGE') ?? '').toLowerCase();
+        const useSSL = ['prod', 'production'].includes(stage);
+
+        return {
+          type: 'postgres' as const,
+          host: configService.get<string>('DB_HOST'),
+          port: Number(configService.get<string>('DB_PORT')),
+          database: configService.get<string>('DB_NAME'),
+          username: configService.get<string>('DB_USERNAME'),
+          password: configService.get<string>('DB_PASSWORD'),
+          ssl: useSSL,
+          extra: {
+            ssl: useSSL ? { rejectUnauthorized: false } : undefined,
+          },
+          autoLoadEntities: true,
+          synchronize: true,
+        };
       },
-      type: 'postgres',
-      host: process.env.DB_HOST,
-      port: +process.env.DB_PORT,
-      database: process.env.DB_NAME,
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,      
-      autoLoadEntities: true,
-      synchronize: true,
     }),
 
     ServeStaticModule.forRoot({
