@@ -208,4 +208,8 @@ export class ProductsService {
       this.handleDBExceptions(error);
     }
   }
+
+  async countProducts() {
+    return this.productRepository.count();
+  }
 }

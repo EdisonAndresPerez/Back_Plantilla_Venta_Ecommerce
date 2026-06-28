@@ -11,10 +11,12 @@ import { SeedModule } from './seed/seed.module';
 import { FilesModule } from './files/files.module';
 import { AuthModule } from './auth/auth.module';
 import { MessagesWsModule } from './messages-ws/messages-ws.module';
+import { OrdersModule } from './orders/orders.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true }),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -40,9 +42,9 @@ import { MessagesWsModule } from './messages-ws/messages-ws.module';
       },
     }),
 
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname,'..','public'), 
-    }),
+   // ServeStaticModule.forRoot({
+   //   rootPath: join(__dirname,'..','public'), 
+   // }),
 
     ProductsModule,
 
@@ -55,6 +57,10 @@ import { MessagesWsModule } from './messages-ws/messages-ws.module';
     AuthModule,
 
     MessagesWsModule,
+
+    OrdersModule,
+
+    PaymentsModule,
 
   ],
 })

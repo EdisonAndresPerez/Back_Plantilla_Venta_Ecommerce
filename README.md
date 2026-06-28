@@ -16,16 +16,17 @@ docker-compose up -d
 
 6. Levantar:
 
-```
 npm run start:dev
 yarn start:dev
 
 ```
 
-7. Ejecutar SEED
+7. Ejecutar SEED manual si hace falta
 
 ```
 http://localhost:3000/api/seed
 ```
+
+> Nota: si la base de datos está vacía, el backend ahora ejecuta el seed automáticamente al iniciar.
 
 # Production notes:

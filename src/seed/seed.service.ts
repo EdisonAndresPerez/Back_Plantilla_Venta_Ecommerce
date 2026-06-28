@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductsService } from './../products/products.service';
@@ -7,7 +7,8 @@ import { User } from '../auth/entities/user.entity';
 
 
 @Injectable()
-export class SeedService {
+export class SeedService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(SeedService.name);
 
   constructor(
     private readonly productsService: ProductsService,
@@ -16,6 +17,9 @@ export class SeedService {
     private readonly userRepository: Repository<User>
   ) {}
 
+  async onApplicationBootstrap() {
+    await this.seedOnStartup();
+  }
 
   async runSeed() {
 
@@ -25,6 +29,36 @@ export class SeedService {
     await this.insertNewProducts( adminUser );
 
     return 'SEED EXECUTED';
+  }
+
+  private async seedOnStartup() {
+    const [productsCount, usersCount] = await Promise.all([
+      this.productsService.countProducts(),
+      this.userRepository.count(),
+    ]);
+
+    if (productsCount > 0) {
+      this.logger.log(`Catalog already seeded (${productsCount} products)`);
+      return;
+    }
+
+    if (usersCount > 0) {
+      const user = await this.userRepository.findOne({
+        order: { id: 'ASC' },
+      });
+
+      if (!user) {
+        await this.runSeed();
+        return;
+      }
+
+      this.logger.warn('Empty catalog detected, seeding products only');
+      await this.insertNewProducts(user);
+      return;
+    }
+
+    this.logger.warn('Empty database detected, running full seed');
+    await this.runSeed();
   }
 
   private async deleteTables() {
@@ -42,12 +76,6 @@ export class SeedService {
   private async insertUsers() {
 
     const seedUsers = initialData.users;
-    
-    const users: User[] = [];
-
-    seedUsers.forEach( user => {
-      users.push( this.userRepository.create( user ) )
-    });
 
     const dbUsers = await this.userRepository.save( seedUsers )
 
